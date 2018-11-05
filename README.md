@@ -1,4 +1,4 @@
 # VindicateReact
 React Project Management
 
-More coming soon
+![Vindicate](https://raw.githubusercontent.com/danielbls/Vindicate/master/Vindicate.png)
