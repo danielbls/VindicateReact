@@ -24,11 +24,18 @@ namespace Vindicate
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
+            services.Configure<MvcJsonOptions>(options =>
+            {
+                options.SerializerSettings.CheckAdditionalContent = true;
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+            });
+
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/build";
             });
+
 
             services.AddDbContext<VindicateContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("VindicateContext")));

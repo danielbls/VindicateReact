@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,5 +15,10 @@ namespace Vindicate.Models
         public int PriorityId { get; set; }
         public DateTime? DueDate { get; set; }
         public Milestone Milestone { get; set; }
+
+        public Deed()
+        {
+            Guid = Guid.NewGuid();
+        }
     }
 }

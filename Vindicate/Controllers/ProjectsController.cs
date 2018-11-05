@@ -28,34 +28,36 @@ namespace Vindicate.Controllers
         }
 
         // GET: api/Projects/5
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetProject([FromRoute] int id)
+        [HttpGet("{guid}")]
+        public async Task<IActionResult> GetProject([FromRoute] Guid guid)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var project = await _context.Project.FindAsync(id);
+            var project = await _context.Project.FirstOrDefaultAsync(x => x.Guid == guid);
 
             if (project == null)
             {
                 return NotFound();
             }
 
+            project.Milestones = _context.Milestone.Where(x => x.Project.Guid == guid).ToList();
+
             return Ok(project);
         }
 
         // PUT: api/Projects/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProject([FromRoute] int id, [FromBody] Project project)
+        [HttpPut("{guid}")]
+        public async Task<IActionResult> PutProject([FromRoute] Guid guid, [FromBody] Project project)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            if (id != project.Id)
+            if (guid != project.Guid)
             {
                 return BadRequest();
             }
@@ -68,7 +70,7 @@ namespace Vindicate.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ProjectExists(id))
+                if (!ProjectExists(guid))
                 {
                     return NotFound();
                 }
@@ -97,15 +99,15 @@ namespace Vindicate.Controllers
         }
 
         // DELETE: api/Projects/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProject([FromRoute] int id)
+        [HttpDelete("{guid}")]
+        public async Task<IActionResult> DeleteProject([FromRoute] Guid guid)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var project = await _context.Project.FindAsync(id);
+            var project = await _context.Project.FirstOrDefaultAsync(x => x.Guid == guid);
             if (project == null)
             {
                 return NotFound();
@@ -117,9 +119,9 @@ namespace Vindicate.Controllers
             return Ok(project);
         }
 
-        private bool ProjectExists(int id)
+        private bool ProjectExists(Guid guid)
         {
-            return _context.Project.Any(e => e.Id == id);
+            return _context.Project.Any(e => e.Guid == guid);
         }
     }
 }

@@ -12,7 +12,8 @@
     "react-scripts": "1.0.17",
     "rimraf": "^2.6.2",
     "@material-ui/core": "^3.3.2",
-    "antd": "3.10.3"
+    "antd": "3.10.3",
+    "moment": "2.22.2"
   },
   "scripts": {
     "start": "rimraf ./build && react-scripts start",

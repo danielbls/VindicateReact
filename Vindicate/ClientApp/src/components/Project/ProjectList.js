@@ -1,13 +1,19 @@
 ﻿import React from 'react';
+import { Redirect, Route } from 'react-router';
 import { Modal, Button, DatePicker, Select, Table, Icon, Form, Input } from 'antd';
 import "antd/dist/antd.css";
+import moment from 'moment'
+import NewProjectModal from './NewProjectModal';
+import { withRouter } from 'react-router-dom'
+// this also works with react-router-native
 
 const scroll = { y: 240 };
 const pagination = { position: 'bottom' };
 const FormItem = Form.Item;
 const Option = Select.Option;
+const createForm = Form.create;
 
-export default class ProjectList extends React.Component {
+class ProjectTable extends React.Component {
     state = {
         bordered: false,
         loading: true,
@@ -19,14 +25,17 @@ export default class ProjectList extends React.Component {
         data: [],
         statusTypes: [],
         priorityTypes: [],
-        newProjectModal: false
+        newProjectModal: false,
+        selectedRowKeys: []
     }
+
+    modal = []
 
     componentWillMount() {
         fetch("api/Projects").then((response) => response.json()).then((d) => this.setState({ data: d }));
         fetch("api/Status").then((response) => response.json()).then((d) => this.setState({ statusTypes: d }));
         fetch("api/Priorities").then((response) => response.json()).then((d) => this.setState({ priorityTypes: d }));
-    } 
+    }
 
     componentDidMount() {
         this.setState({ loading: false, hasData: true });
@@ -63,28 +72,64 @@ export default class ProjectList extends React.Component {
         });
     }
 
-    handleOk = (e) => {
-        console.log(e);
-        this.setState({
-            newProjectModal: false,
-        });
+    hideModal = () => {
+        this.setState({ newProjectModal: false });
     }
 
-    handleCancel = (e) => {
-        console.log(e);
-        this.setState({
-            newProjectModal: false,
-        });
+    confirmDelete = () => {
+        if (window.confirm("Really delete these projects?")) {
+
+            function search(nameKey, myArray) {
+                for (var i = 0; i < myArray.length; i++) {
+                    if (myArray[i].name === nameKey) {
+                        return myArray[i];
+                    }
+                }
+            }
+
+            function deleteProjects() {
+                let newData = this.state.data;
+
+                for (let i = 0; i < this.state.selectedRowKeys.length; i++) {
+                    this.deleteProject(this.state.selectedRowKeys[i]);
+                    let index = newData.filter((_, x) => x.guid === this.state.selectedRowKeys[i]).index;
+                    newData = newData.splice(index, 1);
+                }
+
+                this.setState({ data: newData });
+            }
+
+            deleteProjects = deleteProjects.bind(this);
+            deleteProjects();
+
+
+        }
     }
 
-    handleDateChange = (date, dateString) => {
-        console.log(date, dateString);
+    deleteProject = async (guid) => {
+        return await fetch('api/Projects/' + guid, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        }).then((response) => response);
     }
 
+    fetchProjects = () => {
+        fetch("api/Projects").then((response) => response.json()).then((d) => this.setState({ data: d, selectedRowKeys: [] }));
+    }
+
+    onSelectChange = (selectedRowKeys) => {
+        this.setState({ selectedRowKeys });
+    }
+
+    viewProject = (props, record) => {
+        console.log(record);
+        props.history.push('../project/' + record.guid);
+    }
 
     render() {
-        const state = this.state;
-
+        const props = this.props;
+        let state = this.state;
+        
         let GetStatusLabel = (statusId) => {
             if (state.statusTypes.length > 0) {
                 return state.statusTypes.filter(function (item) {
@@ -113,87 +158,81 @@ export default class ProjectList extends React.Component {
             key: 'name',
             width: 200,
             render: text => <span>{text}</span>,
+            sorter: (a, b) => {
+                if (a.name < b.name) { return -1; }
+                if (a.name > b.name) { return 1; }
+                return 0;
+            },
         }, {
             title: 'Due Date',
             dataIndex: 'dueDate',
             key: 'dueDate',
             width: 140,
-            render: text => <span>{new Intl.DateTimeFormat('en-US', {
+                render: text => <span style={{ color: new Date(text) < new Date() ? "#990000" : "unset" }}>{new Intl.DateTimeFormat('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: '2-digit'
             }).format(new Date(text))}</span>,
+            sorter: (a, b) => a.dueDate > b.dueDate
         }, {
             title: 'Status',
             dataIndex: 'statusId',
             key: 'statusId',
             width: 140,
-                render: text => <span><GetStatusLabel statusId={text}/></span>
+            render: text => <span><GetStatusLabel statusId={text} /></span>,
+            sorter: (a, b) => a.statusId > b.statusId
         }, {
-                title: 'Priority',
-                dataIndex: 'priorityId',
+            title: 'Priority',
+            dataIndex: 'priorityId',
             key: 'priorityId',
             width: 140,
-                render: text => <span><GetPriorityLabel priorityId={text} /></span>
-            }];
+            render: text => <span><GetPriorityLabel priorityId={text} /></span>,
+            sorter: (a, b) => a.priorityId > b.priorityId
+        }];
+
+        const { selectedRowKeys } = this.state;
+
+        const rowSelection = {
+            selectedRowKeys,
+            onChange: this.onSelectChange,
+        };
 
         return (
             <div style={{ paddingTop: "10px" }}>
-                <Modal
-                    title="New Project"
-                    visible={this.state.newProjectModal}
-                    onOk={this.handleOk}
-                    onCancel={this.handleCancel}
-                >
-                    <Form layout="horizontal" onSubmit={this.handleSubmit} style={{ paddingLeft: "30px", paddingRight: "30px" }}>
-                        <FormItem>
-                            <Input size="large" prefix={<Icon type="project" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Project Name" />
-                        </FormItem>
-                        <FormItem>
-                            <DatePicker style={{width: "100%"}} size="large" onChange={this.handleDateChange} placeholder="Due Date" format="MM/DD/YYYY" />
-                        </FormItem>
-                        <FormItem>
-                            <Select
-                                size="large"
-                                showSearch
-                                placeholder="Status"
-                                optionFilterProp="children"
-                                onChange={(e) => console.log(e)}
-                                filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                            >
-                                {state.statusTypes.map(item => {
-                                    return <Option value={item.id} key={item.id}>{item.name}</Option>;
-                                })
-                                }
-                            </Select>
-                        </FormItem>
-                        <FormItem>
-                            <Select
-                                size="large"
-                                showSearch
-                                placeholder="Priority"
-                                optionFilterProp="children"
-                                onChange={(e) => console.log(e)}
-                                filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                            >
-                                {state.priorityTypes.map(item => {
-                                    return <Option value={item.id} key={item.id}>{item.name}</Option>;
-                                })
-                                }
-                            </Select>                        </FormItem>
-                    </Form>
-                </Modal>
+                <NewProjectModal props={this} />
                 <div style={{ float: 'left' }}>
                     <h4>Projects</h4>
                 </div>
                 <div style={{ float: 'right' }}>
-                    <Button type="default" onClick={this.showModal}><Icon type="plus"/>Project</Button>
+                    <Button style={{ marginRight: "10px" }} type="danger" hidden={this.state.selectedRowKeys.length < 1} onClick={this.confirmDelete}><Icon type="delete" />Delete</Button>
+                    <Button type="default" onClick={this.showModal}><Icon type="plus" />Project</Button>
                 </div>
                 <div className="clearfix"></div>
                 <div style={{ paddingTop: "10px" }}>
-                    <Table {...this.state} bordered columns={columns} dataSource={state.hasData ? this.state.data : null} loading={this.state.loading} rowKey="guid" />
+                    <Table {...this.state} rowSelection={rowSelection}
+                        onRow={(record) => {
+                            return {
+                                onClick: () => {
+                                    props.history.push("../project/" + record.guid);
+                                }
+                            }
+                        }
+                    } bordered columns={columns} dataSource={state.hasData ? this.state.data : null} loading={this.state.loading} rowKey="guid" />
                 </div>
             </div>
         );
     }
 }
+
+class ProjectList extends React.Component {
+    ProjectTable = createForm()(ProjectTable);
+    render() {
+        return (
+            <div>
+                <ProjectTable {...this.props} />
+            </div>
+        );
+    }
+}
+
+export default withRouter(ProjectList)

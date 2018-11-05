@@ -14,6 +14,12 @@ namespace Vindicate.Models
         {
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Project>().HasMany(s => s.Milestones).WithOne(s => s.Project);
+            modelBuilder.Entity<Milestone>().HasMany(s => s.Deeds).WithOne(s => s.Milestone);
+        }
+
         public DbSet<Vindicate.Models.Project> Project { get; set; }
 
         public DbSet<Vindicate.Models.Milestone> Milestone { get; set; }

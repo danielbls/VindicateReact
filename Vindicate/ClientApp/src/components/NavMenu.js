@@ -21,7 +21,7 @@ export default class NavMenu extends React.Component {
                         <h3 style={{ color: "#ffffff", marginBottom: "none", marginTop: "10px" }}>Vindicate</h3>
                         </Menu.Item>
                         <Menu.Item key="1">
-                            <Icon type="project" />
+                            <Icon type="pushpin" />
                             <span className="nav-text">Projects</span>
                         </Menu.Item>
                         <Menu.Item key="2">
